@@ -1,0 +1,14 @@
+# Terraform state & secrets
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/terraform.tfvars       # ← contains your webhook URL — NEVER commit this
+
+# Lambda build artifacts
+dist/
+
+# Python
+__pycache__/
+*.pyc
+.env
