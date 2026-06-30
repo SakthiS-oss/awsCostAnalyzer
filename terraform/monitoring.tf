@@ -68,12 +68,20 @@ resource "aws_sns_topic_policy" "cost_alerts" {
 # AWS Cost Anomaly Detection Monitor + Alert Subscription
 ###############################################################################
 
+# AWS only allows one DIMENSIONAL/SERVICE anomaly monitor per account.
+# AWS auto-creates "Default-Services-Monitor" for most accounts — this
+# resource is imported to take it over rather than create a duplicate.
+# Run: terraform import aws_ce_anomaly_monitor.services <ARN>
 resource "aws_ce_anomaly_monitor" "services" {
-  name              = "${var.project_name}-service-monitor"
+  name              = "Default-Services-Monitor"
   monitor_type      = "DIMENSIONAL"
   monitor_dimension = "SERVICE"
 
   tags = local.common_tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_ce_anomaly_subscription" "sns_alert" {
@@ -89,19 +97,12 @@ resource "aws_ce_anomaly_subscription" "sns_alert" {
     address = aws_sns_topic.cost_alerts.arn
   }
 
-  # Alert when absolute impact exceeds threshold OR percentage impact exceeds 20 %
+  # Alert when absolute impact exceeds threshold
   threshold_expression {
-    or {
-      dimension {
-        key           = "ANOMALY_TOTAL_IMPACT_ABSOLUTE"
-        values        = [tostring(var.cost_threshold)]
-        match_options = ["GREATER_THAN_OR_EQUAL"]
-      }
-      dimension {
-        key           = "ANOMALY_TOTAL_IMPACT_PERCENTAGE"
-        values        = ["20"]
-        match_options = ["GREATER_THAN_OR_EQUAL"]
-      }
+    dimension {
+      key           = "ANOMALY_TOTAL_IMPACT_ABSOLUTE"
+      values        = [tostring(var.cost_threshold)]
+      match_options = ["GREATER_THAN_OR_EQUAL"]
     }
   }
 
